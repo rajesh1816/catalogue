@@ -1,63 +1,30 @@
 pipeline {
-  agent {
-    label 'AGENT-1'
-  }
+    agent any 
 
-  environment {
-    REGION_NAME = "us-east-1"
-    ACC_ID = "887363634632"
-    appVersion= ''
-    COMPONENT = "catalogue"
-  }
 
-  options {
-        timeout(time: 30, unit: 'MINUTES') 
-        disableConcurrentBuilds()
-    }
-
-  stages {
-
-    stage('Read App Version') {
-      steps {
-        script {
-          def packageJSON = readJSON file: 'package.json'
-          appVersion = packageJSON.version
-          echo "Application version: ${appVersion}"
+    stages { 
+        stage('Build') {
+            steps { 
+                echo 'Building..' 
+            }
         }
-      }
-    }
-
-    stage('Unit Testing') {
-      steps {
-        script {
-          echo "Running unit tests..."
+        stage('Test') {
+            steps {
+                echo 'Testing..'
+            }
         }
-      }
-    }
-
-    stage('Docker Build & Push to ECR') {
-      steps {
-        script {
-            withAWS(credentials: 'aws-creds', region: 'us-east-1') {
-                sh """
-                    aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 887363634632.dkr.ecr.us-east-1.amazonaws.com
-
-                    docker build -t ${ACC_ID}.dkr.ecr.${REGION_NAME}.amazonaws.com/$PROJECT/$COMPONENT:${appVersion} .
-
-                    docker push ${ACC_ID}.dkr.ecr.${REGION_NAME}.amazonaws.com/$PROJECT/$COMPONENT:${appVersion}
-                """
-             }
+        stage('Deploy') {
+            steps {
+                echo 'Deploying..' 
+            }
         }
-      }
     }
-  }
-
-  post {
-    success {
-      echo "Pipeline completed successfully"
+    post { 
+        always {
+            echo 'I will always say Hello again!'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
     }
-    failure {
-      echo "Pipeline failed"
-    }
-  }
 }
