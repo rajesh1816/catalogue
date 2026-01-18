@@ -4,194 +4,106 @@ pipeline {
     }
 
     environment {
-        PROJECT = 'roboshop'
+        PROJECT   = 'roboshop'
+        COMPONENT = 'catalogue'
+        REGION    = 'us-east-1'
+        ACC_ID    = '887363634632'
         appVersion = ''
-        REGION = 'us-east-1'
-        COMPONENT = "catalogue"
-        ACC_ID = "887363634632"
     }
 
     options {
-        timeout(time: 30, unit: 'MINUTES') 
+        timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds()
     }
-    /* parameters {
-        booleanParam(name: 'deploy', defaultValue: false, description: 'Toggle this value')
 
-    } */
-
-    // build
-    stages { 
+    stages {
+        // =============================
         stage('Read app version') {
             steps {
-                script { 
+                script {
                     def packageJSON = readJSON file: 'package.json'
                     appVersion = packageJSON.version
-                    echo "${appVersion}"
+                    echo "App version: ${appVersion}"
                 }
             }
         }
 
-        stage('install dependencies') {
+        // =============================
+        stage('Install dependencies') {
             steps {
-                script { 
-                    sh '''
-                        npm install
-                    '''
-                }
+                sh 'npm install'
             }
         }
 
-        stage('unit testing') {
+        // =============================
+        stage('Unit testing') {
             steps {
-                script { 
-                    sh '''
-                        echo "running unit test cases"
-                    '''
-                }
+                sh 'echo "Running unit tests..."'
             }
         }
 
-        /* stage('Sonar Scan') {
-            environment {
-                SCANNER_HOME = tool 'sonar-8.0'
-            }
-            steps {
-                withSonarQubeEnv('sonar-8.0') {
-                    sh "${SCANNER_HOME}/bin/sonar-scanner"
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 1, unit: 'HOURS') { // 
-                    waitForQualityGate abortPipeline: false
-                }
-            }
-        }
-
-        stage('Dependabot Alerts Check') {
-            environment {
-                GITHUB_TOKEN = credentials('git-token')
-            }
+        // =============================
+        stage('Build & Push Docker image') {
             steps {
                 script {
-                    // GitHub repo details
-                    def owner = "rajesh1816"
-                    def repo = "catalogue"
-
-                    // Call GitHub REST API
-                    def response = sh(
-                        script: """curl -s -H "Accept: application/vnd.github+json" \
-                                        -H "Authorization: token ${env.GITHUB_TOKEN}" \
-                                        https://api.github.com/repos/${owner}/${repo}/dependabot/alerts""",
-                        returnStdout: true
-                    ).trim()
-
-                    // Parse JSON
-                    def alerts = readJSON text: response
-
-                    // Filter open alerts with high or critical severity
-                    def criticalAlerts = alerts.findAll { alert ->
-                        alert.state == 'open' && (alert.security_advisory.severity == 'critical' || alert.security_advisory.severity == 'high')
-                    }
-
-                    // Fail the pipeline if any critical/high alerts exist
-                    if (criticalAlerts.size() > 0) {
-                        echo "❌ Found ${criticalAlerts.size()} high/critical Dependabot alerts!"
-                        criticalAlerts.each { alert ->
-                            echo "Package: ${alert.dependency.package.name} | Severity: ${alert.security_advisory.severity} | Path: ${alert.dependency.manifest_path}"
-                        }
-                        error("Pipeline aborted due to critical/high Dependabot alerts.")
-                    } else {
-                        echo "✅ No critical/high Dependabot alerts found. Safe to proceed."
-                    }
-                }
-            }
-        } */
-
-
-
-        stage('Build & Push to ECR') {
-            steps {
-                script {
-                    withAWS(credentials: 'aws-creds', region: 'us-east-1') {
+                    withAWS(credentials: 'aws-creds', region: REGION) {
                         sh """
                             # Login to ECR
-                            aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ACC_ID}.dkr.ecr.${REGION}.amazonaws.com
+                            aws ecr get-login-password --region ${REGION} | \
+                                docker login --username AWS --password-stdin ${ACC_ID}.dkr.ecr.${REGION}.amazonaws.com
 
-                            # Build single-arch Docker image (amd64)
-                            docker build -t ${ACC_ID}.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion} .
-                            
+                            # Build Docker image
+                            docker build -t ${ACC_ID}.dkr.ecr.${REGION}.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion} .
+
                             # Push image to ECR
                             docker push ${ACC_ID}.dkr.ecr.${REGION}.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion}
-                            
                         """
                     }
                 }
             }
         }
 
+        // =============================
         stage('Update Image in CD Repo') {
             steps {
                 script {
                     withCredentials([string(credentialsId: 'git-token', variable: 'GIT_TOKEN')]) {
-                        // Remove old clone if exists
                         sh 'rm -rf eks-argocd'
 
-                        // Clone CD repo using token
+                        // Clone CD repo securely
                         sh "git clone https://$GIT_TOKEN@github.com/rajesh1816/eks-argocd.git"
 
-                        // Change directory to catalogue
+                        // Go into catalogue folder inside the repo
                         dir('eks-argocd/catalogue') {
                             // Update image version
-                            sh "sed -i 's/imageVersion:.*/imageVersion: ${appVersion}/' values-dev.yaml"
+                            sh "sed -i 's|imageVersion:.*|imageVersion: ${appVersion}|' values-dev.yaml"
 
-                            // Configure git identity for commit
+                            // Git commit & push
                             sh """
                                 git config user.email "ci@company.com"
                                 git config user.name "jenkins-ci"
+
                                 git add values-dev.yaml
-                                git commit -m "Update catalogue image to ${appVersion}" || echo 'No changes to commit'
-                                git push
+                                git commit -m "Update catalogue image to ${appVersion}" || echo "No changes to commit"
+                                git push https://$GIT_TOKEN@github.com/rajesh1816/eks-argocd.git
                             """
                         }
                     }
                 }
             }
-            }
-
         }
-
-
-
-        /* stage('Trigger Deploy') {
-            when{
-                expression { params.deploy }
-            }
-            steps {
-                script {
-                    build job: 'catalogue-cd',
-                    parameters: [
-                        string(name: 'appVersion', value: "${appVersion}"),
-                        string(name: 'deploy_to', value: 'dev')
-                    ],
-                    propagate: false,  
-                    wait: false 
-                }
-            }
-        } */
     }
 
-
-
-    post { 
+    post {
         always {
-            echo 'I will always say Hello again!'
+            echo 'Pipeline finished!'
+            deleteDir()  // Clean workspace
+        }
+        success {
+            echo '✅ Pipeline succeeded!'
         }
         failure {
-            echo 'Pipeline failed!'
+            echo '❌ Pipeline failed!'
         }
     }
-
+}
