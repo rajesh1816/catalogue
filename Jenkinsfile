@@ -15,10 +15,10 @@ pipeline {
         timeout(time: 30, unit: 'MINUTES') 
         disableConcurrentBuilds()
     }
-    parameters {
+    /* parameters {
         booleanParam(name: 'deploy', defaultValue: false, description: 'Toggle this value')
 
-    }
+    } */
 
     // build
     stages { 
