@@ -133,7 +133,35 @@ pipeline {
             }
         }
 
-        stage('Trigger Deploy') {
+        stage('Update Image in CD Repo') {
+            environment {
+                GITHUB_TOKEN = credentials('git-token')
+            }
+            steps {
+                script {
+                    // GitHub repo details
+                    def owner = "rajesh1816"
+                    def repo = "eks-argocd"
+                        sh """
+                        # Clone CD repo using token
+                        git clone https://$GITHUB_TOKEN@github.com/${owner}/${repo}.git
+                        cd catalogue-cd
+
+                        # Update image version in values file
+                        sed -i "s/imageVersion/${appVersion}/g" values-dev.yaml
+
+                        # Commit and push
+                        git add values-dev.yaml
+                        git commit -m "Update catalogue image to ${appVersion}"
+                        git push https://$GITHUB_TOKEN@github.com/${owner}/${repo}.git
+                        """
+                }
+            }
+            }
+        }
+
+
+        /* stage('Trigger Deploy') {
             when{
                 expression { params.deploy }
             }
@@ -148,7 +176,7 @@ pipeline {
                     wait: false 
                 }
             }
-        }
+        } */
     }
 
 
