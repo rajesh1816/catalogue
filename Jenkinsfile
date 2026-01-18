@@ -84,7 +84,7 @@ pipeline {
                     // Call GitHub REST API
                     def response = sh(
                         script: """curl -s -H "Accept: application/vnd.github+json" \
-                                        -H "Authorization: token ${env.GIT_TOKEN}" \
+                                        -H "Authorization: token ${env.GITHUB_TOKEN}" \
                                         https://api.github.com/repos/${owner}/${repo}/dependabot/alerts""",
                         returnStdout: true
                     ).trim()
