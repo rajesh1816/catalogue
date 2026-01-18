@@ -71,6 +71,47 @@ pipeline {
             }
         }
 
+        stage('Dependabot Alerts Check') {
+            environment {
+                GITHUB_TOKEN = credentials('git-token')
+            }
+            steps {
+                script {
+                    // GitHub repo details
+                    def owner = "rajesh1816"
+                    def repo = "catalogue"
+
+                    // Call GitHub REST API
+                    def response = sh(
+                        script: """curl -s -H "Accept: application/vnd.github+json" \
+                                        -H "Authorization: token ${env.GIT_TOKEN}" \
+                                        https://api.github.com/repos/${owner}/${repo}/dependabot/alerts""",
+                        returnStdout: true
+                    ).trim()
+
+                    // Parse JSON
+                    def alerts = readJSON text: response
+
+                    // Filter open alerts with high or critical severity
+                    def criticalAlerts = alerts.findAll { alert ->
+                        alert.state == 'open' && (alert.security_advisory.severity == 'critical' || alert.security_advisory.severity == 'high')
+                    }
+
+                    // Fail the pipeline if any critical/high alerts exist
+                    if (criticalAlerts.size() > 0) {
+                        echo "❌ Found ${criticalAlerts.size()} high/critical Dependabot alerts!"
+                        criticalAlerts.each { alert ->
+                            echo "Package: ${alert.dependency.package.name} | Severity: ${alert.security_advisory.severity} | Path: ${alert.dependency.manifest_path}"
+                        }
+                        error("Pipeline aborted due to critical/high Dependabot alerts.")
+                    } else {
+                        echo "✅ No critical/high Dependabot alerts found. Safe to proceed."
+                    }
+                }
+            }
+        }
+
+
 
         stage('Build & Push to ECR') {
             steps {
