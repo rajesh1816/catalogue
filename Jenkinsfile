@@ -134,31 +134,26 @@ pipeline {
         }
 
         stage('Update Image in CD Repo') {
-            environment {
-                GITHUB_TOKEN = credentials('git-token')
-            }
             steps {
                 script {
-                    // GitHub repo details
                     def owner = "rajesh1816"
-                    def repo = "eks-argocd"
-                        sh """
-                        # Clone CD repo using token
-                        git clone https://github.com/${owner}/${repo}.git
-                        cd catalogue
+                    def repo  = "eks-argocd"
 
-                        # Update image version in values file
-                        sed -i "s/imageVersion/${appVersion}/g" values-dev.yaml
+                    sh """
+                    git clone https://github.com/${owner}/${repo}.git
+                    cd ${repo}
 
-                        # Commit and push
-                        git add values-dev.yaml
-                        git commit -m "Update catalogue image to ${appVersion}"
-                        git push https://github.com/${owner}/${repo}.git
-                        """
+                    # Update image version
+                    sed -i "s/imageVersion:.*/imageVersion: ${appVersion}/" values-dev.yaml
+
+                    git add values-dev.yaml
+                    git commit -m "Update catalogue image to ${appVersion}"
+                    git push
+                    """
                 }
             }
-            }
-        }
+}
+
 
 
         /* stage('Trigger Deploy') {
