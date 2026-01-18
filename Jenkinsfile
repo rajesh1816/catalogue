@@ -147,9 +147,8 @@ pipeline {
                     # Update image version
                     sed -i "s/imageVersion:.*/imageVersion: ${appVersion}/" values-dev.yaml
 
-                    # Configure git identity
-                    git config user.email "rajeshkaramsetty1999@gmail.com"
-                    git config user.name "rajesh1816"
+                    git config user.email "ci@company.com"
+                    git config user.name "jenkins-ci"
 
 
                     git add values-dev.yaml
