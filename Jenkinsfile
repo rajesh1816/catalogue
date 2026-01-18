@@ -140,6 +140,7 @@ pipeline {
                     def repo  = "eks-argocd"
 
                     sh """
+                    rm -rf ${repo}
                     git clone https://github.com/${owner}/${repo}.git
                     cd ${repo}
 
