@@ -124,8 +124,11 @@ pipeline {
                             # Build single-arch Docker image (amd64)
                             docker build --platform linux/amd64 -t ${ACC_ID}.dkr.ecr.${REGION}.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion} .
 
-                            # Push the image to ECR
+                            # Push image to ECR
                             docker push ${ACC_ID}.dkr.ecr.${REGION}.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion}
+
+                            # Trigger ECR scan
+                            aws ecr start-image-scan --repository-name ${PROJECT}/${COMPONENT} --image-id imageTag=${appVersion}
                             
                         """
                     }
