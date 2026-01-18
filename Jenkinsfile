@@ -19,7 +19,7 @@ pipeline {
         booleanParam(name: 'deploy', defaultValue: false, description: 'Toggle this value')
 
     }
-    
+
     // build
     stages { 
         stage('Read app version') {
@@ -63,6 +63,13 @@ pipeline {
             }
         }
 
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') { // 
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
 
 
         stage('Build & Push to ECR') {
