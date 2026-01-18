@@ -144,7 +144,7 @@ pipeline {
                     def repo = "eks-argocd"
                         sh """
                         # Clone CD repo using token
-                        git clone https://$GITHUB_TOKEN@github.com/${owner}/${repo}.git
+                        git clone https://github.com/${owner}/${repo}.git
                         cd catalogue
 
                         # Update image version in values file
@@ -153,7 +153,7 @@ pipeline {
                         # Commit and push
                         git add values-dev.yaml
                         git commit -m "Update catalogue image to ${appVersion}"
-                        git push https://$GITHUB_TOKEN@github.com/${owner}/${repo}.git
+                        git push https://github.com/${owner}/${repo}.git
                         """
                 }
             }
