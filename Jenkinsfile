@@ -142,7 +142,7 @@ pipeline {
                     sh """
                     rm -rf ${repo}
                     git clone https://github.com/${owner}/${repo}.git
-                    cd ${COMPONENT}
+                    cd ${repo}/${COMPONENT}
 
                     # Update image version
                     sed -i "s/imageVersion:.*/imageVersion: ${appVersion}/" values-dev.yaml
