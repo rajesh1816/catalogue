@@ -123,6 +123,7 @@ pipeline {
                             docker build -t ${ACC_ID}.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion} .
 
                             docker push ${ACC_ID}.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion}
+                            aws ecr start-image-scan --repository-name ${PROJECT}/${COMPONENT} --image-id imageTag=${appVersion}
                         """
                     }
                 }
