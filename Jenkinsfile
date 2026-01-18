@@ -8,8 +8,18 @@ pipeline {
         appVersion = ''
         REGION = 'us-east-1'
         COMPONENT = "catalogue"
+        ACC_ID = "887363634632"
     }
 
+    options {
+        timeout(time: 30, unit: 'MINUTES') 
+        disableConcurrentBuilds()
+    }
+    parameters {
+        booleanParam(name: 'deploy', defaultValue: false, description: 'Toggle this value')
+
+    }
+    
     // build
     stages { 
         stage('Read app version') {
@@ -42,16 +52,29 @@ pipeline {
             }
         }
 
+        stage('Sonar Scan') {
+            environment {
+                SCANNER_HOME = tool 'sonar-8.0'
+            }
+            steps {
+                withSonarQubeEnv('sonar-8.0') {
+                    sh "${SCANNER_HOME}/bin/sonar-scanner"
+                }
+            }
+        }
+
+
+
         stage('Build & Push to ECR') {
             steps {
                 script {
                     withAWS(credentials: 'aws-creds', region: 'us-east-1') {
                         sh """
-                            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 887363634632.dkr.ecr.us-east-1.amazonaws.com
+                            aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ACC_ID}.dkr.ecr.${REGION}.amazonaws.com
 
-                            docker build -t 887363634632.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion} .
+                            docker build -t ${ACC_ID}.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion} .
 
-                            docker push 887363634632.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion}
+                            docker push ${ACC_ID}.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion}
                         """
                     }
                 }
