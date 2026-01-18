@@ -136,28 +136,33 @@ pipeline {
         stage('Update Image in CD Repo') {
             steps {
                 script {
-                    def owner = "rajesh1816"
-                    def repo  = "eks-argocd"
+                    withCredentials([string(credentialsId: 'git-token', variable: 'GIT_TOKEN')]) {
+                        // Remove old clone if exists
+                        sh 'rm -rf eks-argocd'
 
-                    sh """
-                    rm -rf ${repo}
-                    git clone https://github.com/${owner}/${repo}.git
-                    cd ${repo}/${COMPONENT}
+                        // Clone CD repo using token
+                        sh "git clone https://$GIT_TOKEN@github.com/rajesh1816/eks-argocd.git"
 
-                    # Update image version
-                    sed -i "s/imageVersion:.*/imageVersion: ${appVersion}/" values-dev.yaml
+                        // Change directory to catalogue
+                        dir('eks-argocd/catalogue') {
+                            // Update image version
+                            sh "sed -i 's/imageVersion:.*/imageVersion: ${appVersion}/' values-dev.yaml"
 
-                    git config user.email "ci@company.com"
-                    git config user.name "jenkins-ci"
-
-
-                    git add values-dev.yaml
-                    git commit -m "Update catalogue image to ${appVersion}"
-                    git push
-                    """
+                            // Configure git identity for commit
+                            sh """
+                                git config user.email "ci@company.com"
+                                git config user.name "jenkins-ci"
+                                git add values-dev.yaml
+                                git commit -m "Update catalogue image to ${appVersion}" || echo 'No changes to commit'
+                                git push
+                            """
+                        }
+                    }
                 }
             }
-}
+            }
+
+        }
 
 
 
