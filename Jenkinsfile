@@ -43,6 +43,63 @@ pipeline {
         }
 
         // =============================
+        /* stage('SonarQube Scan') {
+            environment {
+                SCANNER_HOME = tool 'sonar-8.0'
+            }
+            steps {
+                withSonarQubeEnv('sonar-8.0') {
+                    sh "${SCANNER_HOME}/bin/sonar-scanner"
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        
+        // =============================
+        stage('Dependabot Alerts Check') {
+            environment {
+                GITHUB_TOKEN = credentials('git-token')
+            }
+            steps {
+                script {
+                    def owner = "rajesh1816"
+                    def repo = COMPONENT
+                    def response = sh(
+                        script: """curl -s -H "Accept: application/vnd.github+json" \
+                                    -H "Authorization: token ${env.GITHUB_TOKEN}" \
+                                    https://api.github.com/repos/${owner}/${repo}/dependabot/alerts""",
+                        returnStdout: true
+                    ).trim()
+
+                    def alerts = readJSON text: response
+                    def criticalAlerts = alerts.findAll { alert ->
+                        alert.state == 'open' && (alert.security_advisory.severity == 'critical' || alert.security_advisory.severity == 'high')
+                    }
+
+                    if (criticalAlerts.size() > 0) {
+                        echo "❌ Found ${criticalAlerts.size()} high/critical Dependabot alerts!"
+                        criticalAlerts.each { alert ->
+                            echo "Package: ${alert.dependency.package.name} | Severity: ${alert.security_advisory.severity} | Path: ${alert.dependency.manifest_path}"
+                        }
+                        error("Pipeline aborted due to critical/high Dependabot alerts.")
+                    } else {
+                        echo "✅ No critical/high Dependabot alerts found."
+                    }
+                }
+            }
+        } */
+        
+
+
+        // =============================
         stage('Build & Push Docker image') {
             steps {
                 script {
