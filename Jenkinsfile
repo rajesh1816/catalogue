@@ -148,7 +148,7 @@ pipeline {
                     sed -i "s/imageVersion:.*/imageVersion: ${appVersion}/" values-dev.yaml
 
                     # Configure git identity
-                    git config user.email "rajesh1999@gmail.com"
+                    git config user.email "rajeshkaramsetty1999@gmail.com"
                     git config user.name "rajesh1816"
 
 
