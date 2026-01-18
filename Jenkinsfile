@@ -122,13 +122,10 @@ pipeline {
                             aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ACC_ID}.dkr.ecr.${REGION}.amazonaws.com
 
                             # Build single-arch Docker image (amd64)
-                            docker build --platform linux/amd64 -t ${ACC_ID}.dkr.ecr.${REGION}.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion} .
-
+                            docker build -t ${ACC_ID}.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion} .
+                            
                             # Push image to ECR
                             docker push ${ACC_ID}.dkr.ecr.${REGION}.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion}
-
-                            # Trigger ECR scan
-                            aws ecr start-image-scan --repository-name ${PROJECT}/${COMPONENT} --image-id imageTag=${appVersion}
                             
                         """
                     }
@@ -136,6 +133,22 @@ pipeline {
             }
         }
 
+        stage('Trigger Deploy') {
+            when{
+                expression { params.deploy }
+            }
+            steps {
+                script {
+                    build job: 'catalogue-cd',
+                    parameters: [
+                        string(name: 'appVersion', value: "${appVersion}"),
+                        string(name: 'deploy_to', value: 'dev')
+                    ],
+                    propagate: false,  
+                    wait: false 
+                }
+            }
+        }
     }
 
 
