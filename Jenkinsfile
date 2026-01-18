@@ -145,7 +145,7 @@ pipeline {
                         sh """
                         # Clone CD repo using token
                         git clone https://$GITHUB_TOKEN@github.com/${owner}/${repo}.git
-                        cd catalogue-cd
+                        cd catalogue
 
                         # Update image version in values file
                         sed -i "s/imageVersion/${appVersion}/g" values-dev.yaml
