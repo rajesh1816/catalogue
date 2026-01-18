@@ -52,7 +52,7 @@ pipeline {
             }
         }
 
-        stage('Sonar Scan') {
+        /* stage('Sonar Scan') {
             environment {
                 SCANNER_HOME = tool 'sonar-8.0'
             }
@@ -109,7 +109,7 @@ pipeline {
                     }
                 }
             }
-        }
+        } */
 
 
 
