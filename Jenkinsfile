@@ -147,6 +147,11 @@ pipeline {
                     # Update image version
                     sed -i "s/imageVersion:.*/imageVersion: ${appVersion}/" values-dev.yaml
 
+                    # Configure git identity
+                    git config user.email "rajesh1999@gmail.com"
+                    git config user.name "rajesh1816"
+
+
                     git add values-dev.yaml
                     git commit -m "Update catalogue image to ${appVersion}"
                     git push
