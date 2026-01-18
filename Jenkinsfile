@@ -2,7 +2,7 @@
 
 def configMap = [
     project : "roboshop",
-    component: "catalogue"
+    component: "catalogue" 
 ] 
 
 if( ! env.BRANCH_NAME.equalsIgnoreCase('main') ){ // if not equals to main
@@ -10,5 +10,5 @@ if( ! env.BRANCH_NAME.equalsIgnoreCase('main') ){ // if not equals to main
 } 
 else{
     echo "Please proceed with PROD process"
-} 
+}  
 
